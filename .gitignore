@@ -1,0 +1,17 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual env / local configs
+.env
+venv/
+.python-version
+
+# Generated QR images
+static/qr/*.png
+
+# Uploaded images
+static/uploads/*
+
+# OS
+.DS_Store
