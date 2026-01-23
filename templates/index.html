@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>QR Service</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background:#f7f7f7; }
+        h1 { margin-bottom: 30px; }
+        h2 { margin-top: 0; }
+        input, button, select { padding: 10px; width: 100%; margin: 8px 0; }
+        .box {
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        img { margin-top: 10px; border: 1px solid #ccc; }
+        .result-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🔳 QR Service</h1>
+
+<!-- QR GENERATE -->
+<div class="box">
+    <h2> QR Kod Oluştur</h2>
+    <input type="text" id="qrData" placeholder="QR içine yazılacak veri">
+
+    <!-- Yeni alanlar -->
+    <label>Renk:</label>
+    <input type="color" id="qrColor" value="#000000">
+
+    <label>Arka Plan Rengi:</label>
+    <input type="color" id="qrBgColor" value="#ffffff">
+
+    <label>Boyut (px):</label>
+    <input type="number" id="qrSize" value="200" min="50" max="1000">
+
+    <label>Hata Düzeltme:</label>
+    <select id="qrErrorCorrection">
+        <option value="L">Düşük (L)</option>
+        <option value="M" selected>Orta (M)</option>
+        <option value="Q">Yüksek (Q)</option>
+        <option value="H">En Yüksek (H)</option>
+    </select>
+
+    <button onclick="generateQR()">QR Oluştur</button>
+
+    <div id="generatePreview"></div>
+</div>
+
+<!-- QR DECODE -->
+<div class="box">
+    <h2> QR Decode</h2>
+    <input type="file" id="decodeFile">
+    <button onclick="decodeQR()">QR Decode</button>
+    <div id="decodeResult"></div>
+</div>
+
+<!-- FILE UPLOAD -->
+<div class="box">
+    <h2> Dosya Upload</h2>
+    <input type="file" id="uploadFile">
+    <button onclick="uploadFile()">Dosya Yükle</button>
+    <div id="uploadPreview"></div>
+</div>
+
+<script>
+async function generateQR() {
+    const data = document.getElementById("qrData").value;
+    const color = document.getElementById("qrColor").value;
+    const bgColor = document.getElementById("qrBgColor").value;
+    const size = parseInt(document.getElementById("qrSize").value);
+    const errorCorrection = document.getElementById("qrErrorCorrection").value;
+
+    const res = await fetch("/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data, color, bgColor, size, errorCorrection })
+    });
+
+    const json = await res.json();
+
+    if (json.download_url) {
+        document.getElementById("generatePreview").innerHTML = `
+            <div class="result-box">
+                <p><b>Oluşturulan QR:</b></p>
+                <img src="${json.download_url}" width="${size}"><br><br>
+                <a href="${json.download_url}" target="_blank">⬇ QR İndir</a>
+            </div>
+        `;
+    } else {
+        document.getElementById("generatePreview").textContent =
+            JSON.stringify(json, null, 2);
+    }
+}
+
+async function decodeQR() {
+    const fileInput = document.getElementById("decodeFile");
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    const res = await fetch("/decode", {
+        method: "POST",
+        body: formData
+    });
+
+    const json = await res.json();
+
+    if (json.data) {
+        document.getElementById("decodeResult").innerHTML = `
+            <div class="result-box">
+                <p><b>QR İçeriği:</b></p>
+                <div>${json.data}</div>
+            </div>
+        `;
+    } else {
+        document.getElementById("decodeResult").textContent =
+            JSON.stringify(json, null, 2);
+    }
+}
+
+async function uploadFile() {
+    const fileInput = document.getElementById("uploadFile");
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    const res = await fetch("/upload", {
+        method: "POST",
+        body: formData
+    });
+
+    const json = await res.json();
+
+    if (json.file_path) {
+        document.getElementById("uploadPreview").innerHTML = `
+            <div class="result-box">
+                <p><b>Yüklenen Dosya:</b></p>
+                <img src="${json.file_path}" width="200"><br><br>
+                <a href="${json.file_path}" target="_blank">📂 Dosyayı Aç</a>
+            </div>
+        `;
+    } else {
+        document.getElementById("uploadPreview").textContent =
+            JSON.stringify(json, null, 2);
+    }
+}
+</script>
+
+</body>
+</html>
